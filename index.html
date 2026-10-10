@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Self-Hosted Email Infrastructure — Hetzner + Mailcow + Listmonk</title>
+  <meta name="description" content="Hands-on or fully hands-off setup of your own VPS email service on Hetzner with Mailcow and Listmonk (or your preferred stack). Proper IP warmup, domain reputation, and long-term control." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .gradient-bg {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    }
+    .card {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      backdrop-filter: blur(8px);
+    }
+    .input-field {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .input-field:focus {
+      outline: none;
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(14, 165, 233, 0.35);
+    }
+    .check-item::before {
+      content: "✓";
+      color: #34d399;
+      font-weight: 700;
+      margin-right: 0.6rem;
+    }
+  </style>
+</head>
+<body class="gradient-bg text-slate-200 min-h-screen">
+
+  <!-- Header -->
+  <header class="border-b border-slate-700/50">
+    <div class="max-w-5xl mx-auto px-6 py-5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-sky-500/20 border border-sky-400/30 flex items-center justify-center">
+          <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+        </div>
+        <span class="font-semibold text-white tracking-tight">OwnYourEmail</span>
+      </div>
+      <a href="#intake" class="text-sm text-sky-400 hover:text-sky-300 font-medium">Start Intake →</a>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="max-w-5xl mx-auto px-6 pt-16 pb-12 text-center">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-400/20 text-sky-300 text-xs font-medium mb-6">
+      Hetzner · Mailcow · Listmonk (or your preferred stack)
+    </div>
+    <h1 class="text-4xl sm:text-5xl font-bold text-white leading-tight tracking-tight max-w-3xl mx-auto">
+      Your own VPS email infrastructure.<br />
+      <span class="text-sky-400">You own the keys.</span>
+    </h1>
+    <p class="mt-6 text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
+      I set up a production-ready self-hosted email stack on Hetzner — Mailcow for mail, Listmonk (or your preferred tool) for marketing — with proper IP warmup, DNS, and reputation foundations. Fully hands-off option available using Claude.
+    </p>
+    <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+      <a href="#intake" class="btn-primary text-white font-semibold px-8 py-3.5 rounded-xl text-base">
+        Request Setup
+      </a>
+      <a href="#process" class="px-8 py-3.5 rounded-xl border border-slate-600 text-slate-300 hover:border-slate-500 hover:text-white font-medium transition">
+        How it works
+      </a>
+    </div>
+  </section>
+
+  <!-- What you get -->
+  <section class="max-w-5xl mx-auto px-6 py-12">
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="card rounded-2xl p-6">
+        <div class="w-10 h-10 rounded-lg bg-emerald-500/15 border border-emerald-400/20 flex items-center justify-center mb-4">
+          <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        </div>
+        <h3 class="font-semibold text-white text-lg mb-2">Full control</h3>
+        <p class="text-slate-400 text-sm leading-relaxed">Your Hetzner server, your domain, your IPs. No third-party ESP lock-in. Export everything anytime.</p>
+      </div>
+      <div class="card rounded-2xl p-6">
+        <div class="w-10 h-10 rounded-lg bg-sky-500/15 border border-sky-400/20 flex items-center justify-center mb-4">
+          <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        </div>
+        <h3 class="font-semibold text-white text-lg mb-2">Hands-off option</h3>
+        <p class="text-slate-400 text-sm leading-relaxed">Prefer zero involvement? I can handle the entire setup end-to-end with Claude assistance for documentation and runbooks.</p>
+      </div>
+      <div class="card rounded-2xl p-6">
+        <div class="w-10 h-10 rounded-lg bg-amber-500/15 border border-amber-400/20 flex items-center justify-center mb-4">
+          <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <h3 class="font-semibold text-white text-lg mb-2">Realistic warmup</h3>
+        <p class="text-slate-400 text-sm leading-relaxed">New IPs need 60–120 days of careful warmup before you can safely send to your full list. We plan for that from day one.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Process / Important realities -->
+  <section id="process" class="max-w-5xl mx-auto px-6 py-12">
+    <div class="card rounded-2xl p-8 md:p-10">
+      <h2 class="text-2xl font-bold text-white mb-2">What you need to understand before we start</h2>
+      <p class="text-slate-400 mb-8">These are non-negotiable realities of running your own mail infrastructure.</p>
+
+      <div class="space-y-6">
+        <div class="flex gap-4">
+          <div class="flex-shrink-0 w-8 h-8 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center text-sm font-bold">1</div>
+          <div>
+            <h4 class="font-semibold text-white">You register the Hetzner server</h4>
+            <p class="text-slate-400 text-sm mt-1 leading-relaxed">You create the Hetzner Cloud (or dedicated) account and provision the server. You then provide me with admin (root / sudo) access so I can install and configure the stack. The server stays in your name and under your billing.</p>
+          </div>
+        </div>
+        <div class="flex gap-4">
+          <div class="flex-shrink-0 w-8 h-8 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center text-sm font-bold">2</div>
+          <div>
+            <h4 class="font-semibold text-white">IP warmup is mandatory and takes time</h4>
+            <p class="text-slate-400 text-sm mt-1 leading-relaxed">A brand-new IP has no reputation. Sending to your entire list on day one will land you in spam folders or get the IP blocked. Proper warmup typically takes <strong class="text-slate-200">60 to 120 days</strong> of gradually increasing volume before you can safely reach your full list. We build the schedule together.</p>
+          </div>
+        </div>
+        <div class="flex gap-4">
+          <div class="flex-shrink-0 w-8 h-8 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center text-sm font-bold">3</div>
+          <div>
+            <h4 class="font-semibold text-white">Domain reputation matters</h4>
+            <p class="text-slate-400 text-sm mt-1 leading-relaxed">A domain with history, clean Postmaster Tools data, and existing good standing dramatically improves deliverability. New or poorly managed domains start from zero.</p>
+          </div>
+        </div>
+        <div class="flex gap-4">
+          <div class="flex-shrink-0 w-8 h-8 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center text-sm font-bold">4</div>
+          <div>
+            <h4 class="font-semibold text-white">Stack choices</h4>
+            <p class="text-slate-400 text-sm mt-1 leading-relaxed">Default recommendation: <strong class="text-slate-200">Mailcow</strong> (full mail server) + <strong class="text-slate-200">Listmonk</strong> (self-hosted newsletter / campaigns). Happy to use another email management / marketing app if you have a preference.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Intake form -->
+  <section id="intake" class="max-w-3xl mx-auto px-6 py-16">
+    <div class="text-center mb-10">
+      <h2 class="text-3xl font-bold text-white">Intake questionnaire</h2>
+      <p class="mt-3 text-slate-400">Answer these so I can assess fit and plan the right approach for you.</p>
+    </div>
+
+    <form id="intake-form" class="card rounded-2xl p-8 md:p-10 space-y-8" onsubmit="handleSubmit(event)">
+
+      <!-- Current operation -->
+      <fieldset>
+        <legend class="text-sm font-semibold text-sky-400 uppercase tracking-wider mb-4">Current email marketing</legend>
+        <div class="space-y-5">
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2">Do you currently run an email marketing operation?</label>
+            <div class="flex flex-wrap gap-4">
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="has_operation" value="yes" class="accent-sky-500" required />
+                <span class="text-slate-300">Yes</span>
+              </label>
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="has_operation" value="no" class="accent-sky-500" />
+                <span class="text-slate-300">No / just starting</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label for="current_esp" class="block text-sm font-medium text-slate-300 mb-2">Who is your current email service provider? <span class="text-slate-500 font-normal">(if any)</span></label>
+            <input type="text" id="current_esp" name="current_esp" placeholder="e.g. Mailchimp, Klaviyo, Amazon SES, none…" class="input-field w-full rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500" />
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Domain -->
+      <fieldset>
+        <legend class="text-sm font-semibold text-sky-400 uppercase tracking-wider mb-4">Domain</legend>
+        <div class="space-y-5">
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2">Do you have a domain with good standing?</label>
+            <div class="flex flex-wrap gap-4">
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="domain_standing" value="yes" class="accent-sky-500" required />
+                <span class="text-slate-300">Yes</span>
+              </label>
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="domain_standing" value="somewhat" class="accent-sky-500" />
+                <span class="text-slate-300">Somewhat / mixed</span>
+              </label>
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="domain_standing" value="no" class="accent-sky-500" />
+                <span class="text-slate-300">New or poor history</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label for="domain_years" class="block text-sm font-medium text-slate-300 mb-2">How many years has the domain been in use for email?</label>
+            <input type="text" id="domain_years" name="domain_years" placeholder="e.g. 3 years, 6 months, brand new…" class="input-field w-full rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2">Is the domain listed / verified in Google Postmaster Tools?</label>
+            <div class="flex flex-wrap gap-4">
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="postmaster" value="yes" class="accent-sky-500" required />
+                <span class="text-slate-300">Yes</span>
+              </label>
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="postmaster" value="no" class="accent-sky-500" />
+                <span class="text-slate-300">No</span>
+              </label>
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="postmaster" value="unsure" class="accent-sky-500" />
+                <span class="text-slate-300">Not sure</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Confirmations -->
+      <fieldset>
+        <legend class="text-sm font-semibold text-sky-400 uppercase tracking-wider mb-4">Required confirmations</legend>
+        <div class="space-y-4">
+          <label class="flex items-start gap-3 cursor-pointer group">
+            <input type="checkbox" name="confirm_warmup" required class="mt-1 accent-sky-500" />
+            <span class="text-slate-300 text-sm leading-relaxed group-hover:text-slate-200">
+              I understand that a new IP must be warmed up and that it can take <strong class="text-white">60 to 120 days</strong> before I can safely send to my entire list.
+            </span>
+          </label>
+          <label class="flex items-start gap-3 cursor-pointer group">
+            <input type="checkbox" name="confirm_hetzner" required class="mt-1 accent-sky-500" />
+            <span class="text-slate-300 text-sm leading-relaxed group-hover:text-slate-200">
+              I confirm that I will register the server with Hetzner (in my own account) and provide you with admin access for the setup.
+            </span>
+          </label>
+        </div>
+      </fieldset>
+
+      <!-- Preferences -->
+      <fieldset>
+        <legend class="text-sm font-semibold text-sky-400 uppercase tracking-wider mb-4">Preferences</legend>
+        <div class="space-y-5">
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2">Preferred engagement style</label>
+            <div class="flex flex-wrap gap-4">
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="engagement" value="collaborative" class="accent-sky-500" required />
+                <span class="text-slate-300">Collaborative (I stay involved)</span>
+              </label>
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="engagement" value="hands_off" class="accent-sky-500" />
+                <span class="text-slate-300">Fully hands-off (Claude-assisted)</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label for="preferred_stack" class="block text-sm font-medium text-slate-300 mb-2">Preferred email management / marketing app</label>
+            <input type="text" id="preferred_stack" name="preferred_stack" placeholder="Listmonk (default), or name another…" class="input-field w-full rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500" />
+          </div>
+          <div>
+            <label for="list_size" class="block text-sm font-medium text-slate-300 mb-2">Approximate list size (optional)</label>
+            <input type="text" id="list_size" name="list_size" placeholder="e.g. 5,000 / 50,000 / 200,000…" class="input-field w-full rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500" />
+          </div>
+          <div>
+            <label for="notes" class="block text-sm font-medium text-slate-300 mb-2">Anything else I should know?</label>
+            <textarea id="notes" name="notes" rows="3" placeholder="Goals, constraints, timelines, previous deliverability issues…" class="input-field w-full rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500 resize-y"></textarea>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Contact -->
+      <fieldset>
+        <legend class="text-sm font-semibold text-sky-400 uppercase tracking-wider mb-4">How to reach you</legend>
+        <div class="grid sm:grid-cols-2 gap-5">
+          <div>
+            <label for="name" class="block text-sm font-medium text-slate-300 mb-2">Name</label>
+            <input type="text" id="name" name="name" required class="input-field w-full rounded-lg px-4 py-2.5 text-slate-200" />
+          </div>
+          <div>
+            <label for="email" class="block text-sm font-medium text-slate-300 mb-2">Email</label>
+            <input type="email" id="email" name="email" required class="input-field w-full rounded-lg px-4 py-2.5 text-slate-200" />
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Payment note -->
+      <div class="rounded-xl bg-slate-800/60 border border-slate-700/60 p-5">
+        <h4 class="font-semibold text-white text-sm mb-2">Payment</h4>
+        <p class="text-slate-400 text-sm leading-relaxed">
+          When the work is done, you decide what to pay. There is no reserve price. Payment is appreciated and can influence priority for any follow-up requests if the amount is considered grossly unreasonable relative to the scope delivered.
+        </p>
+      </div>
+
+      <button type="submit" class="btn-primary w-full text-white font-semibold py-3.5 rounded-xl text-base">
+        Submit intake
+      </button>
+
+      <p class="text-center text-xs text-slate-500">
+        Submitting does not create a binding contract. I’ll review and reply to discuss next steps.
+      </p>
+    </form>
+
+    <!-- Success state (hidden by default) -->
+    <div id="success-message" class="hidden card rounded-2xl p-10 text-center">
+      <div class="w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center mx-auto mb-5">
+        <svg class="w-7 h-7 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <h3 class="text-xl font-bold text-white mb-2">Intake received</h3>
+      <p class="text-slate-400 max-w-md mx-auto">Thanks. I’ll review your answers and get back to you shortly to discuss fit and next steps.</p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800 mt-8">
+    <div class="max-w-5xl mx-auto px-6 py-8 text-center text-sm text-slate-500">
+      <p>Self-hosted email setup on Hetzner · Mailcow · Listmonk (or preferred)</p>
+      <p class="mt-1">You own the infrastructure. Warmup takes time. No lock-in.</p>
+    </div>
+  </footer>
+
+  <script>
+    function handleSubmit(e) {
+      e.preventDefault();
+      const form = document.getElementById('intake-form');
+      const success = document.getElementById('success-message');
+
+      // Collect data (for future backend / email integration)
+      const data = Object.fromEntries(new FormData(form).entries());
+      console.log('Intake submission:', data);
+
+      // For now: show success UI. Replace with real endpoint when ready.
+      form.classList.add('hidden');
+      success.classList.remove('hidden');
+      success.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  </script>
+</body>
+</html>
